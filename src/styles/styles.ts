@@ -4,7 +4,7 @@ export const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 20,
-    backgroundColor: "#f5f5f5",
+    backgroundColor: "#f0fdf4",
   },
 
   title: {
@@ -14,7 +14,7 @@ export const styles = StyleSheet.create({
   },
 
   kosCard: {
-    backgroundColor: "white",
+    backgroundColor: "#2fe3f0",
     padding: 20,
     marginBottom: 15,
     borderRadius: 12,
@@ -24,22 +24,26 @@ export const styles = StyleSheet.create({
     fontSize: 22,
     fontWeight: "bold",
     marginBottom: 8,
+    color: "#ffffff",
   },
 
   price: {
     fontSize: 18,
     fontWeight: "bold",
     marginBottom: 5,
+    color: "#ffffff",
   },
 
   info: {
     marginBottom: 5,
+    color: "#ffffff",
   },
 
   facilityTitle: {
     fontWeight: "bold",
     marginTop: 5,
     marginBottom: 8,
+    color: "#ffffff",
   },
 
   facilityContainer: {
@@ -52,10 +56,11 @@ export const styles = StyleSheet.create({
     paddingVertical: 6,
     paddingHorizontal: 10,
     borderRadius: 8,
-    backgroundColor: "#eeeeee",
+    backgroundColor: "#dcfce7",
   },
 
   facilityText: {
     fontSize: 13,
+    color: "#166534",
   },
 });
