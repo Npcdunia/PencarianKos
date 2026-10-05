@@ -1,4 +1,10 @@
-import { View, Text, FlatList } from "react-native";
+import {
+  View,
+  Text,
+  FlatList,
+  TextInput,
+} from "react-native";
+
 import { styles } from "../styles/styles";
 
 interface Kos {
@@ -45,7 +51,6 @@ const kosData: Kos[] = [
   },
 ];
 
-
 function formatHarga(harga: number) {
   return `Rp${harga.toLocaleString("id-ID")}`;
 }
@@ -53,15 +58,49 @@ function formatHarga(harga: number) {
 export default function HomeScreen() {
   return (
     <View style={styles.container}>
+
       <Text style={styles.title}>
         KosFinder
       </Text>
+
+      {/* Search Bar */}
+      <View
+        style={{
+          flexDirection: "row",
+          alignItems: "center",
+          backgroundColor: "white",
+          borderWidth: 1,
+          borderColor: "#ddd",
+          borderRadius: 10,
+          marginBottom: 15,
+          paddingHorizontal: 12,
+        }}
+      >
+        <Text
+          style={{
+            fontSize: 20,
+            marginRight: 8,
+          }}
+        >
+          🔍
+        </Text>
+
+        <TextInput
+          placeholder="Cari kos..."
+          style={{
+            flex: 1,
+            paddingVertical: 12,
+            fontSize: 15,
+          }}
+        />
+      </View>
 
       <FlatList
         data={kosData}
         keyExtractor={(item) => item.id.toString()}
         renderItem={({ item }) => (
           <View style={styles.kosCard}>
+
             <Text style={styles.kosName}>
               {item.nama}
             </Text>
@@ -82,7 +121,6 @@ export default function HomeScreen() {
               Fasilitas:
             </Text>
 
-            {/* Loop menggunakan map() */}
             <View style={styles.facilityContainer}>
               {item.fasilitas.map((fasilitas, index) => (
                 <View
@@ -95,9 +133,11 @@ export default function HomeScreen() {
                 </View>
               ))}
             </View>
+
           </View>
         )}
       />
+
     </View>
   );
 }
