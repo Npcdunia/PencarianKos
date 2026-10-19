@@ -1,4 +1,6 @@
+
 import { useState, useEffect } from "react";
+import { useRouter } from "expo-router";
 
 import {
   View,
@@ -10,6 +12,7 @@ import {
 
 import { Ionicons } from "@expo/vector-icons";
 import { styles } from "../styles/styles";
+import { useFavorit } from "../Context/FavoritContext";
 
 interface Kos {
   id: number;
@@ -60,22 +63,13 @@ function formatHarga(harga: number) {
 }
 
 export default function HomeScreen() {
+  const router = useRouter();
+
+  const { kosTersimpan, toggleMarkah } = useFavorit();
+
   const [kataKunci, setKataKunci] = useState("");
   const [kosTerfilter, setKosTerfilter] =
     useState<Kos[]>(kosData);
-
-  // Menyimpan ID kos yang diberi bookmark
-  const [kosTersimpan, setKosTersimpan] =
-    useState<number[]>([]);
-
-  // Menambah atau menghapus bookmark
-  const toggleMarkah = (id: number) => {
-    setKosTersimpan((sebelumnya) =>
-      sebelumnya.includes(id)
-        ? sebelumnya.filter((kosId) => kosId !== id)
-        : [...sebelumnya, id]
-    );
-  };
 
   // Memfilter kos berdasarkan kata pencarian
   useEffect(() => {
@@ -93,6 +87,36 @@ export default function HomeScreen() {
       <Text style={styles.title}>
         KosFinder
       </Text>
+
+      {/* Tombol menuju halaman favorit */}
+      <Pressable
+        onPress={() => router.push("/favorit")}
+        style={{
+          flexDirection: "row",
+          alignItems: "center",
+          justifyContent: "center",
+          backgroundColor: "#DCFCE7",
+          padding: 12,
+          borderRadius: 10,
+          marginBottom: 15,
+        }}
+      >
+        <Ionicons
+          name="bookmark"
+          size={20}
+          color="#166534"
+        />
+
+        <Text
+          style={{
+            color: "#166534",
+            fontWeight: "bold",
+            marginLeft: 8,
+          }}
+        >
+          Kos Favorit ({kosTersimpan.length})
+        </Text>
+      </Pressable>
 
       {/* Search Bar */}
       <View
@@ -178,13 +202,41 @@ export default function HomeScreen() {
                 )}
               </View>
 
-              {/* Tombol Bookmark di kanan bawah */}
+              {/* Tombol Detail dan Bookmark */}
               <View
                 style={{
-                  alignItems: "flex-end",
+                  flexDirection: "row",
+                  justifyContent: "space-between",
+                  alignItems: "center",
                   marginTop: 12,
                 }}
               >
+                <Pressable
+                  onPress={() =>
+                    router.push({
+                      pathname: "/detail",
+                      params: {
+                        id: item.id.toString(),
+                      },
+                    })
+                  }
+                  style={{
+                    backgroundColor: "#16A34A",
+                    paddingVertical: 9,
+                    paddingHorizontal: 14,
+                    borderRadius: 8,
+                  }}
+                >
+                  <Text
+                    style={{
+                      color: "white",
+                      fontWeight: "bold",
+                    }}
+                  >
+                    Lihat Detail
+                  </Text>
+                </Pressable>
+
                 <Pressable
                   onPress={() => toggleMarkah(item.id)}
                   accessibilityRole="button"
@@ -202,7 +254,11 @@ export default function HomeScreen() {
                         : "bookmark-outline"
                     }
                     size={28}
-                    color="#000000"
+                    color={
+                      sudahDisimpan
+                        ? "#16A34A"
+                        : "#000000"
+                    }
                   />
                 </Pressable>
               </View>
