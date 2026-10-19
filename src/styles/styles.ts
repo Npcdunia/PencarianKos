@@ -14,7 +14,7 @@ export const styles = StyleSheet.create({
   },
 
   kosCard: {
-    backgroundColor: "#2fe3f0",
+    backgroundColor: "#165db9",
     padding: 20,
     marginBottom: 15,
     borderRadius: 12,

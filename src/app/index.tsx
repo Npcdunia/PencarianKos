@@ -1,10 +1,14 @@
+import { useState, useEffect } from "react";
+
 import {
   View,
   Text,
   FlatList,
   TextInput,
+  Pressable,
 } from "react-native";
 
+import { Ionicons } from "@expo/vector-icons";
 import { styles } from "../styles/styles";
 
 interface Kos {
@@ -56,9 +60,36 @@ function formatHarga(harga: number) {
 }
 
 export default function HomeScreen() {
+  const [kataKunci, setKataKunci] = useState("");
+  const [kosTerfilter, setKosTerfilter] =
+    useState<Kos[]>(kosData);
+
+  // Menyimpan ID kos yang diberi bookmark
+  const [kosTersimpan, setKosTersimpan] =
+    useState<number[]>([]);
+
+  // Menambah atau menghapus bookmark
+  const toggleMarkah = (id: number) => {
+    setKosTersimpan((sebelumnya) =>
+      sebelumnya.includes(id)
+        ? sebelumnya.filter((kosId) => kosId !== id)
+        : [...sebelumnya, id]
+    );
+  };
+
+  // Memfilter kos berdasarkan kata pencarian
+  useEffect(() => {
+    const hasil = kosData.filter((kos) =>
+      kos.nama
+        .toLowerCase()
+        .includes(kataKunci.toLowerCase())
+    );
+
+    setKosTerfilter(hasil);
+  }, [kataKunci]);
+
   return (
     <View style={styles.container}>
-
       <Text style={styles.title}>
         KosFinder
       </Text>
@@ -87,6 +118,8 @@ export default function HomeScreen() {
 
         <TextInput
           placeholder="Cari kos..."
+          value={kataKunci}
+          onChangeText={setKataKunci}
           style={{
             flex: 1,
             paddingVertical: 12,
@@ -95,49 +128,88 @@ export default function HomeScreen() {
         />
       </View>
 
+      {/* Daftar Kos */}
       <FlatList
-        data={kosData}
+        data={kosTerfilter}
         keyExtractor={(item) => item.id.toString()}
-        renderItem={({ item }) => (
-          <View style={styles.kosCard}>
+        ListEmptyComponent={
+          <Text style={styles.info}>
+            Kos tidak ditemukan.
+          </Text>
+        }
+        renderItem={({ item }) => {
+          const sudahDisimpan =
+            kosTersimpan.includes(item.id);
 
-            <Text style={styles.kosName}>
-              {item.nama}
-            </Text>
+          return (
+            <View style={styles.kosCard}>
+              <Text style={styles.kosName}>
+                {item.nama}
+              </Text>
 
-            <Text style={styles.price}>
-              {formatHarga(item.harga)}
-            </Text>
+              <Text style={styles.price}>
+                {formatHarga(item.harga)}
+              </Text>
 
-            <Text style={styles.info}>
-              ⭐ {item.rating}
-            </Text>
+              <Text style={styles.info}>
+                ⭐ {item.rating}
+              </Text>
 
-            <Text style={styles.info}>
-              {item.sisaKamar} kamar tersedia
-            </Text>
+              <Text style={styles.info}>
+                {item.sisaKamar} kamar tersedia
+              </Text>
 
-            <Text style={styles.facilityTitle}>
-              Fasilitas:
-            </Text>
+              <Text style={styles.facilityTitle}>
+                Fasilitas:
+              </Text>
 
-            <View style={styles.facilityContainer}>
-              {item.fasilitas.map((fasilitas, index) => (
-                <View
-                  key={index}
-                  style={styles.facilityItem}
+              <View style={styles.facilityContainer}>
+                {item.fasilitas.map(
+                  (fasilitas, index) => (
+                    <View
+                      key={index}
+                      style={styles.facilityItem}
+                    >
+                      <Text style={styles.facilityText}>
+                        {fasilitas}
+                      </Text>
+                    </View>
+                  )
+                )}
+              </View>
+
+              {/* Tombol Bookmark di kanan bawah */}
+              <View
+                style={{
+                  alignItems: "flex-end",
+                  marginTop: 12,
+                }}
+              >
+                <Pressable
+                  onPress={() => toggleMarkah(item.id)}
+                  accessibilityRole="button"
+                  accessibilityLabel={
+                    sudahDisimpan
+                      ? `Hapus markah ${item.nama}`
+                      : `Simpan ${item.nama}`
+                  }
+                  hitSlop={8}
                 >
-                  <Text style={styles.facilityText}>
-                    {fasilitas}
-                  </Text>
-                </View>
-              ))}
+                  <Ionicons
+                    name={
+                      sudahDisimpan
+                        ? "bookmark"
+                        : "bookmark-outline"
+                    }
+                    size={28}
+                    color="#000000"
+                  />
+                </Pressable>
+              </View>
             </View>
-
-          </View>
-        )}
+          );
+        }}
       />
-
     </View>
   );
 }
