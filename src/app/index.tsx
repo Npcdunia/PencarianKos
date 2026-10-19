@@ -1,18 +1,12 @@
-
-import { useState, useEffect } from "react";
 import { useRouter } from "expo-router";
+import { useEffect, useState } from "react";
 
-import {
-  View,
-  Text,
-  FlatList,
-  TextInput,
-  Pressable,
-} from "react-native";
+import { FlatList, Pressable, Text, TextInput, View } from "react-native";
 
 import { Ionicons } from "@expo/vector-icons";
-import { styles } from "../styles/styles";
 import { useFavorit } from "../Context/FavoritContext";
+import { useTheme } from "../Context/ThemeContext";
+import { styles } from "../styles/styles";
 
 interface Kos {
   id: number;
@@ -53,7 +47,7 @@ const kosData: Kos[] = [
     rating: 4.7,
     sisaKamar: 1,
     fasilitas: ["WiFi", "AC", "Kamar Mandi Dalam"],
-    latitude: -7.920,
+    latitude: -7.92,
     longitude: 112.605,
   },
 ];
@@ -64,29 +58,31 @@ function formatHarga(harga: number) {
 
 export default function HomeScreen() {
   const router = useRouter();
-
   const { kosTersimpan, toggleMarkah } = useFavorit();
+  const { colors, isDark } = useTheme();
 
   const [kataKunci, setKataKunci] = useState("");
-  const [kosTerfilter, setKosTerfilter] =
-    useState<Kos[]>(kosData);
+  const [kosTerfilter, setKosTerfilter] = useState<Kos[]>(kosData);
 
-  // Memfilter kos berdasarkan kata pencarian
   useEffect(() => {
     const hasil = kosData.filter((kos) =>
-      kos.nama
-        .toLowerCase()
-        .includes(kataKunci.toLowerCase())
+      kos.nama.toLowerCase().includes(kataKunci.toLowerCase()),
     );
 
     setKosTerfilter(hasil);
   }, [kataKunci]);
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>
-        KosFinder
-      </Text>
+    <View
+      style={[
+        styles.container,
+        {
+          flex: 1,
+          backgroundColor: colors.background,
+        },
+      ]}
+    >
+      <Text style={[styles.title, { color: colors.text }]}>KosFinder</Text>
 
       {/* Tombol menuju halaman favorit */}
       <Pressable
@@ -95,21 +91,17 @@ export default function HomeScreen() {
           flexDirection: "row",
           alignItems: "center",
           justifyContent: "center",
-          backgroundColor: "#DCFCE7",
+          backgroundColor: colors.favoriteBackground,
           padding: 12,
           borderRadius: 10,
           marginBottom: 15,
         }}
       >
-        <Ionicons
-          name="bookmark"
-          size={20}
-          color="#166534"
-        />
+        <Ionicons name="bookmark" size={20} color={colors.favoriteText} />
 
         <Text
           style={{
-            color: "#166534",
+            color: colors.favoriteText,
             fontWeight: "bold",
             marginLeft: 8,
           }}
@@ -123,83 +115,96 @@ export default function HomeScreen() {
         style={{
           flexDirection: "row",
           alignItems: "center",
-          backgroundColor: "white",
+          backgroundColor: colors.input,
           borderWidth: 1,
-          borderColor: "#ddd",
+          borderColor: colors.border,
           borderRadius: 10,
           marginBottom: 15,
           paddingHorizontal: 12,
         }}
       >
-        <Text
-          style={{
-            fontSize: 20,
-            marginRight: 8,
-          }}
-        >
-          🔍
-        </Text>
+        <Text style={{ fontSize: 20, marginRight: 8 }}>🔍</Text>
 
         <TextInput
           placeholder="Cari kos..."
+          placeholderTextColor={colors.secondaryText}
           value={kataKunci}
           onChangeText={setKataKunci}
           style={{
             flex: 1,
             paddingVertical: 12,
             fontSize: 15,
+            color: colors.text,
           }}
         />
       </View>
 
       {/* Daftar Kos */}
       <FlatList
+        style={{ flex: 1 }}
         data={kosTerfilter}
         keyExtractor={(item) => item.id.toString()}
+        contentContainerStyle={{ paddingBottom: 20 }}
         ListEmptyComponent={
-          <Text style={styles.info}>
+          <Text style={[styles.info, { color: colors.secondaryText }]}>
             Kos tidak ditemukan.
           </Text>
         }
         renderItem={({ item }) => {
-          const sudahDisimpan =
-            kosTersimpan.includes(item.id);
+          const sudahDisimpan = kosTersimpan.includes(item.id);
 
           return (
-            <View style={styles.kosCard}>
-              <Text style={styles.kosName}>
+            <View
+              style={[
+                styles.kosCard,
+                {
+                  backgroundColor: colors.surface,
+                  borderColor: colors.border,
+                  borderWidth: 1,
+                },
+              ]}
+            >
+              <Text style={[styles.kosName, { color: colors.text }]}>
                 {item.nama}
               </Text>
 
-              <Text style={styles.price}>
+              <Text
+                style={[
+                  styles.price,
+                  { color: isDark ? "#86EFAC" : "#15803D" },
+                ]}
+              >
                 {formatHarga(item.harga)}
               </Text>
 
-              <Text style={styles.info}>
+              <Text style={[styles.info, { color: colors.secondaryText }]}>
                 ⭐ {item.rating}
               </Text>
 
-              <Text style={styles.info}>
+              <Text style={[styles.info, { color: colors.secondaryText }]}>
                 {item.sisaKamar} kamar tersedia
               </Text>
 
-              <Text style={styles.facilityTitle}>
+              <Text style={[styles.facilityTitle, { color: colors.text }]}>
                 Fasilitas:
               </Text>
 
               <View style={styles.facilityContainer}>
-                {item.fasilitas.map(
-                  (fasilitas, index) => (
-                    <View
-                      key={index}
-                      style={styles.facilityItem}
-                    >
-                      <Text style={styles.facilityText}>
-                        {fasilitas}
-                      </Text>
-                    </View>
-                  )
-                )}
+                {item.fasilitas.map((fasilitas, index) => (
+                  <View
+                    key={index}
+                    style={[
+                      styles.facilityItem,
+                      {
+                        backgroundColor: isDark ? "#374151" : "#E5E7EB",
+                      },
+                    ]}
+                  >
+                    <Text style={[styles.facilityText, { color: colors.text }]}>
+                      {fasilitas}
+                    </Text>
+                  </View>
+                ))}
               </View>
 
               {/* Tombol Detail dan Bookmark */}
@@ -221,7 +226,7 @@ export default function HomeScreen() {
                     })
                   }
                   style={{
-                    backgroundColor: "#16A34A",
+                    backgroundColor: colors.primary,
                     paddingVertical: 9,
                     paddingHorizontal: 14,
                     borderRadius: 8,
@@ -229,7 +234,7 @@ export default function HomeScreen() {
                 >
                   <Text
                     style={{
-                      color: "white",
+                      color: "#FFFFFF",
                       fontWeight: "bold",
                     }}
                   >
@@ -248,17 +253,9 @@ export default function HomeScreen() {
                   hitSlop={8}
                 >
                   <Ionicons
-                    name={
-                      sudahDisimpan
-                        ? "bookmark"
-                        : "bookmark-outline"
-                    }
+                    name={sudahDisimpan ? "bookmark" : "bookmark-outline"}
                     size={28}
-                    color={
-                      sudahDisimpan
-                        ? "#16A34A"
-                        : "#000000"
-                    }
+                    color={sudahDisimpan ? colors.primary : colors.bookmark}
                   />
                 </Pressable>
               </View>
