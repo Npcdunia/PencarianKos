@@ -1,56 +1,21 @@
 import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 
-import { FlatList, Pressable, Text, TextInput, View } from "react-native";
+import {
+  ActivityIndicator,
+  FlatList,
+  Pressable,
+  Text,
+  TextInput,
+  View,
+} from "react-native";
 
 import { Ionicons } from "@expo/vector-icons";
 import { useFavorit } from "../Context/FavoritContext";
 import { useTheme } from "../Context/ThemeContext";
+import { useKos } from "../hooks/useKos";
 import { styles } from "../styles/styles";
-
-interface Kos {
-  id: number;
-  nama: string;
-  harga: number;
-  rating: number;
-  sisaKamar: number;
-  fasilitas: string[];
-  latitude: number;
-  longitude: number;
-}
-
-const kosData: Kos[] = [
-  {
-    id: 1,
-    nama: "Kos Mawar",
-    harga: 750000,
-    rating: 4.5,
-    sisaKamar: 2,
-    fasilitas: ["WiFi", "AC", "Parkir"],
-    latitude: -7.921,
-    longitude: 112.603,
-  },
-  {
-    id: 2,
-    nama: "Kos Melati",
-    harga: 650000,
-    rating: 4.2,
-    sisaKamar: 4,
-    fasilitas: ["WiFi", "Parkir"],
-    latitude: -7.923,
-    longitude: 112.604,
-  },
-  {
-    id: 3,
-    nama: "Kos Anggrek",
-    harga: 850000,
-    rating: 4.7,
-    sisaKamar: 1,
-    fasilitas: ["WiFi", "AC", "Kamar Mandi Dalam"],
-    latitude: -7.92,
-    longitude: 112.605,
-  },
-];
+import type { Kos } from "../types/kos";
 
 function formatHarga(harga: number) {
   return `Rp${harga.toLocaleString("id-ID")}`;
@@ -62,15 +27,16 @@ export default function HomeScreen() {
   const { colors, isDark } = useTheme();
 
   const [kataKunci, setKataKunci] = useState("");
-  const [kosTerfilter, setKosTerfilter] = useState<Kos[]>(kosData);
+  const { daftarKos, loading, error, muatUlang } = useKos(); // data dari API
+  const [kosTerfilter, setKosTerfilter] = useState<Kos[]>([]);
 
   useEffect(() => {
-    const hasil = kosData.filter((kos) =>
+    const hasil = daftarKos.filter((kos) =>
       kos.nama.toLowerCase().includes(kataKunci.toLowerCase()),
     );
 
     setKosTerfilter(hasil);
-  }, [kataKunci]);
+  }, [kataKunci, daftarKos]);
 
   return (
     <View
@@ -146,9 +112,32 @@ export default function HomeScreen() {
         keyExtractor={(item) => item.id.toString()}
         contentContainerStyle={{ paddingBottom: 20 }}
         ListEmptyComponent={
-          <Text style={[styles.info, { color: colors.secondaryText }]}>
-            Kos tidak ditemukan.
-          </Text>
+          loading ? (
+            <ActivityIndicator size="large" color={colors.primary} />
+          ) : error ? (
+            <View>
+              <Text style={[styles.info, { color: colors.secondaryText }]}>
+                Gagal memuat data: {error}
+              </Text>
+              <Pressable
+                onPress={muatUlang}
+                style={{
+                  backgroundColor: colors.primary,
+                  padding: 10,
+                  borderRadius: 8,
+                  alignItems: "center",
+                }}
+              >
+                <Text style={{ color: "#FFFFFF", fontWeight: "bold" }}>
+                  Coba Lagi
+                </Text>
+              </Pressable>
+            </View>
+          ) : (
+            <Text style={[styles.info, { color: colors.secondaryText }]}>
+              Kos tidak ditemukan.
+            </Text>
+          )
         }
         renderItem={({ item }) => {
           const sudahDisimpan = kosTersimpan.includes(item.id);
@@ -174,7 +163,7 @@ export default function HomeScreen() {
                   { color: isDark ? "#86EFAC" : "#15803D" },
                 ]}
               >
-                {formatHarga(item.harga)}
+                {formatHarga(item.harga)} (estimasi)
               </Text>
 
               <Text style={[styles.info, { color: colors.secondaryText }]}>

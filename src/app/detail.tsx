@@ -1,47 +1,32 @@
 
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { View, Text, Pressable, ScrollView } from "react-native";
+import {
+  ActivityIndicator,
+  View,
+  Text,
+  Pressable,
+  ScrollView,
+} from "react-native";
 
-const kosData = [
-  {
-    id: 1,
-    nama: "Kos Mawar",
-    harga: 750000,
-    rating: 4.5,
-    sisaKamar: 2,
-    fasilitas: ["WiFi", "AC", "Parkir"],
-    latitude: -7.921,
-    longitude: 112.603,
-  },
-  {
-    id: 2,
-    nama: "Kos Melati",
-    harga: 650000,
-    rating: 4.2,
-    sisaKamar: 4,
-    fasilitas: ["WiFi", "Parkir"],
-    latitude: -7.923,
-    longitude: 112.604,
-  },
-  {
-    id: 3,
-    nama: "Kos Anggrek",
-    harga: 850000,
-    rating: 4.7,
-    sisaKamar: 1,
-    fasilitas: ["WiFi", "AC", "Kamar Mandi Dalam"],
-    latitude: -7.920,
-    longitude: 112.605,
-  },
-];
+import { useKos } from "../hooks/useKos";
 
 export default function DetailKos() {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
 
-  const kos = kosData.find(
+  const { daftarKos, loading } = useKos(); // data dari API (sudah di-cache)
+
+  const kos = daftarKos.find(
     (item) => item.id === Number(id)
   );
+
+  if (loading) {
+    return (
+      <View style={styles.container}>
+        <ActivityIndicator size="large" color="#16A34A" />
+      </View>
+    );
+  }
 
   if (!kos) {
     return (
@@ -62,8 +47,13 @@ export default function DetailKos() {
     <ScrollView contentContainerStyle={styles.container}>
       <Text style={styles.title}>{kos.nama}</Text>
 
+      <Text style={styles.info}>
+        {kos.tipe}
+        {kos.alamat ? ` • ${kos.alamat}` : ""}
+      </Text>
+
       <Text style={styles.price}>
-        Rp{kos.harga.toLocaleString("id-ID")} / bulan
+        Rp{kos.harga.toLocaleString("id-ID")} / bulan (estimasi)
       </Text>
 
       <Text style={styles.info}>⭐ Rating: {kos.rating}</Text>
