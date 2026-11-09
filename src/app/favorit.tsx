@@ -1,47 +1,16 @@
-
 import { useRouter } from "expo-router";
-import {
-  View,
-  Text,
-  FlatList,
-  Pressable,
-} from "react-native";
+import { FlatList, Pressable, Text, View } from "react-native";
 
 import { useFavorit } from "../Context/FavoritContext";
-
-const kosData = [
-  {
-    id: 1,
-    nama: "Kos Mawar",
-    harga: 750000,
-    rating: 4.5,
-    sisaKamar: 2,
-    fasilitas: ["WiFi", "AC", "Parkir"],
-  },
-  {
-    id: 2,
-    nama: "Kos Melati",
-    harga: 650000,
-    rating: 4.2,
-    sisaKamar: 4,
-    fasilitas: ["WiFi", "Parkir"],
-  },
-  {
-    id: 3,
-    nama: "Kos Anggrek",
-    harga: 850000,
-    rating: 4.7,
-    sisaKamar: 1,
-    fasilitas: ["WiFi", "AC", "Kamar Mandi Dalam"],
-  },
-];
+import { useKos } from "../hooks/useKos";
 
 export default function FavoritScreen() {
   const router = useRouter();
   const { kosTersimpan, toggleMarkah } = useFavorit();
+  const { daftarKos } = useKos(); // data yang sama dengan halaman utama
 
-  const daftarFavorit = kosData.filter((kos) =>
-    kosTersimpan.includes(kos.id)
+  const daftarFavorit = daftarKos.filter((kos) =>
+    kosTersimpan.includes(kos.id),
   );
 
   return (
@@ -87,19 +56,18 @@ export default function FavoritScreen() {
             </Text>
 
             <Text style={{ fontSize: 16, marginTop: 8 }}>
-              Rp{item.harga.toLocaleString("id-ID")} / bulan
+              Rp{item.harga.toLocaleString("id-ID")} / bulan (estimasi)
             </Text>
 
-            <Text style={{ marginTop: 5 }}>
-              ⭐ {item.rating}
-            </Text>
+            <Text style={{ marginTop: 5 }}>⭐ {item.rating}</Text>
 
             <Text style={{ marginTop: 5 }}>
               {item.sisaKamar} kamar tersedia
             </Text>
 
             <Text style={{ marginTop: 5 }}>
-              Fasilitas: {item.fasilitas.join(", ")}
+              Fasilitas:{" "}
+              {item.fasilitas.length ? item.fasilitas.join(", ") : "-"}
             </Text>
 
             <View

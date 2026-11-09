@@ -14,6 +14,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useFavorit } from "../Context/FavoritContext";
 import { useTheme } from "../Context/ThemeContext";
 import { useKos } from "../hooks/useKos";
+import { parseHarga, saringKos } from "../services/filterKos";
 import { styles } from "../styles/styles";
 import type { Kos } from "../types/kos";
 
@@ -21,22 +22,63 @@ function formatHarga(harga: number) {
   return `Rp${harga.toLocaleString("id-ID")}`;
 }
 
+// Pilihan cepat rentang harga (null = tidak dibatasi).
+const PILIHAN_HARGA: { label: string; min: number | null; max: number | null }[] = [
+  { label: "Semua", min: null, max: null },
+  { label: "< Rp500rb", min: null, max: 500000 },
+  { label: "Rp500rb - 700rb", min: 500000, max: 700000 },
+  { label: "> Rp700rb", min: 700000, max: null },
+];
+
 export default function HomeScreen() {
   const router = useRouter();
   const { kosTersimpan, toggleMarkah } = useFavorit();
   const { colors, isDark } = useTheme();
 
   const [kataKunci, setKataKunci] = useState("");
+  const [teksMin, setTeksMin] = useState("");
+  const [teksMax, setTeksMax] = useState("");
+  const [pesanFilter, setPesanFilter] = useState<string | null>(null);
   const { daftarKos, loading, error, muatUlang } = useKos(); // data dari API
   const [kosTerfilter, setKosTerfilter] = useState<Kos[]>([]);
 
+  // Filter nama + rentang harga lewat Promise (.then / .catch).
   useEffect(() => {
-    const hasil = daftarKos.filter((kos) =>
-      kos.nama.toLowerCase().includes(kataKunci.toLowerCase()),
-    );
+    let dibatalkan = false;
 
-    setKosTerfilter(hasil);
-  }, [kataKunci, daftarKos]);
+    saringKos(daftarKos, {
+      kataKunci,
+      hargaMin: parseHarga(teksMin),
+      hargaMax: parseHarga(teksMax),
+    })
+      .then((hasil) => {
+        if (dibatalkan) return;
+        setKosTerfilter(hasil); // resolve
+        setPesanFilter(null);
+      })
+      .catch((e: Error) => {
+        if (dibatalkan) return;
+        setKosTerfilter([]); // reject
+        setPesanFilter(e.message);
+      });
+
+    return () => {
+      dibatalkan = true;
+    };
+  }, [kataKunci, teksMin, teksMax, daftarKos]);
+
+  const pilihanAktif = PILIHAN_HARGA.findIndex(
+    (p) =>
+      (p.min === null ? "" : String(p.min)) === teksMin &&
+      (p.max === null ? "" : String(p.max)) === teksMax,
+  );
+
+  const terapkanPilihan = (min: number | null, max: number | null) => {
+    setTeksMin(min === null ? "" : String(min));
+    setTeksMax(max === null ? "" : String(max));
+  };
+
+  const adaFilterHarga = teksMin !== "" || teksMax !== "";
 
   return (
     <View
@@ -105,10 +147,110 @@ export default function HomeScreen() {
         />
       </View>
 
+      {/* Filter Harga */}
+      <View style={{ marginBottom: 12 }}>
+        <Text
+          style={{ color: colors.text, fontWeight: "bold", marginBottom: 8 }}
+        >
+          Filter harga per bulan
+        </Text>
+
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+          {[
+            { nilai: teksMin, ubah: setTeksMin, label: "Harga min" },
+            { nilai: teksMax, ubah: setTeksMax, label: "Harga max" },
+          ].map((f) => (
+            <View
+              key={f.label}
+              style={{
+                flex: 1,
+                flexDirection: "row",
+                alignItems: "center",
+                backgroundColor: colors.input,
+                borderWidth: 1,
+                borderColor: pesanFilter ? "#DC2626" : colors.border,
+                borderRadius: 10,
+                paddingHorizontal: 10,
+              }}
+            >
+              <Text style={{ color: colors.secondaryText, marginRight: 4 }}>
+                Rp
+              </Text>
+              <TextInput
+                placeholder={f.label}
+                placeholderTextColor={colors.secondaryText}
+                keyboardType="numeric"
+                value={f.nilai === "" ? "" : Number(f.nilai).toLocaleString("id-ID")}
+                onChangeText={(t) => f.ubah(t.replace(/\D/g, ""))}
+                style={{ flex: 1, paddingVertical: 10, color: colors.text }}
+                accessibilityLabel={f.label}
+              />
+            </View>
+          ))}
+        </View>
+
+        <View
+          style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 10 }}
+        >
+          {PILIHAN_HARGA.map((p, index) => {
+            const aktif = index === pilihanAktif;
+            return (
+              <Pressable
+                key={p.label}
+                onPress={() => terapkanPilihan(p.min, p.max)}
+                style={{
+                  paddingVertical: 6,
+                  paddingHorizontal: 12,
+                  borderRadius: 16,
+                  borderWidth: 1,
+                  borderColor: aktif ? colors.primary : colors.border,
+                  backgroundColor: aktif ? colors.primary : colors.surface,
+                }}
+              >
+                <Text
+                  style={{
+                    color: aktif ? "#FFFFFF" : colors.text,
+                    fontSize: 13,
+                  }}
+                >
+                  {p.label}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </View>
+
+        {pesanFilter && (
+          <Text style={{ color: "#DC2626", marginTop: 8 }}>{pesanFilter}</Text>
+        )}
+
+        <View
+          style={{
+            flexDirection: "row",
+            justifyContent: "space-between",
+            alignItems: "center",
+            marginTop: 8,
+          }}
+        >
+          <Text style={{ color: colors.secondaryText }}>
+            {kosTerfilter.length} kos ditemukan
+          </Text>
+          {adaFilterHarga && (
+            <Pressable onPress={() => terapkanPilihan(null, null)}>
+              <Text style={{ color: colors.primary, fontWeight: "bold" }}>
+                Reset harga
+              </Text>
+            </Pressable>
+          )}
+        </View>
+      </View>
+
       {/* Daftar Kos */}
       <FlatList
         style={{ flex: 1 }}
         data={kosTerfilter}
+        refreshing={loading && daftarKos.length > 0}
+        onRefresh={muatUlang}
         keyExtractor={(item) => item.id.toString()}
         contentContainerStyle={{ paddingBottom: 20 }}
         ListEmptyComponent={

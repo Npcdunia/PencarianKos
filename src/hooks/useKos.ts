@@ -1,38 +1,50 @@
 import { useCallback, useEffect, useState } from "react";
 
-import { ambilDataKos } from "../services/kosApi";
+import { ambilDataKos, ambilDataKosPromise } from "../services/kosApi";
 import type { Kos } from "../types/kos";
 
-// Menyimpan hasil API supaya halaman Detail tidak perlu memanggil API lagi.
 let kosCache: Kos[] | null = null;
 
-// Hook yang menyediakan data kos dari API untuk fitur pencarian.
 export function useKos() {
   const [daftarKos, setDaftarKos] = useState<Kos[]>(kosCache ?? []);
   const [loading, setLoading] = useState<boolean>(kosCache === null);
   const [error, setError] = useState<string | null>(null);
-
-  const muatUlang = useCallback(async () => {
+  const muatData = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const data = await ambilDataKos(); // berhasil
+      const data = await ambilDataKos(); 
       kosCache = data;
-      console.log("Jumlah kos dari API:", data.length); // untuk uji
+      console.log("Jumlah kos dari API:", data.length); 
       setDaftarKos(data);
     } catch (e) {
-      // gagal (tidak ada internet, server sibuk, dll.)
+      
       setError(e instanceof Error ? e.message : "Terjadi kesalahan");
     } finally {
       setLoading(false);
     }
   }, []);
 
+  const muatUlang = useCallback(() => {
+    setLoading(true);
+    setError(null);
+    return ambilDataKosPromise()
+      .then((data) => {
+        kosCache = data; 
+        setDaftarKos(data);
+      })
+      .catch((e: unknown) => {
+      
+        setError(e instanceof Error ? e.message : "Terjadi kesalahan");
+      })
+      .finally(() => setLoading(false));
+  }, []);
+
   useEffect(() => {
     if (kosCache === null) {
-      muatUlang();
+      muatData();
     }
-  }, [muatUlang]);
+  }, [muatData]);
 
   return { daftarKos, loading, error, muatUlang };
 }
