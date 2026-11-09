@@ -15,7 +15,7 @@ const QUERY = `
   nwr["building"="dormitory"]["name"](${AREA});
   nwr["name"~"^(kos|kost) ",i](${AREA});
 );
-out center tags 50;
+out center tags 20;
 `;
 
 // Alamat lengkap endpoint (query dikirim lewat parameter ?data=)
