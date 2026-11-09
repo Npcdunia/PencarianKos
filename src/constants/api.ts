@@ -1,13 +1,9 @@
-// External API: OpenStreetMap lewat Overpass API (gratis, tanpa API key).
-// Dokumentasi: https://wiki.openstreetmap.org/wiki/Overpass_API
+export const OVERPASS_URL = "https://overpass.private.coffee/api/interpreter";
 
-export const OVERPASS_URL = "https://overpass-api.de/api/interpreter";
 
-// Kotak area pencarian: sekitar Kota Malang (selatan, barat, utara, timur).
 const AREA = "-8.03,112.57,-7.90,112.69";
 
-// Query Overpass: cari guest house, hostel, asrama, dan tempat bernama "Kos ...".
-// "out center tags 50" = ambil maksimal 50 data beserta titik koordinatnya.
+
 const QUERY = `
 [out:json][timeout:25];
 (
@@ -18,5 +14,5 @@ const QUERY = `
 out center tags 20;
 `;
 
-// Alamat lengkap endpoint (query dikirim lewat parameter ?data=)
+
 export const KOS_API_URL = `${OVERPASS_URL}?data=${encodeURIComponent(QUERY)}`;
