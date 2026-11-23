@@ -1,16 +1,32 @@
+
 import { useRouter } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
-import { FlatList, Pressable, Text, TextInput, View } from "react-native";
+import {
+  FlatList,
+  Pressable,
+  Text,
+  TextInput,
+  View,
+} from "react-native";
 
 import { useFavorit } from "../Context/FavoritContext";
-import { useKos } from "../hooks/useKos";
+import { useKosSupabase } from "../hooks/usekosSupabase";
+import { ubahKeKos } from "../services/kosAdepter";
 import { parseHarga, saringKos } from "../services/filterKos";
 import type { Kos } from "../types/kos";
 
 export default function FavoritScreen() {
   const router = useRouter();
   const { kosTersimpan, toggleMarkah } = useFavorit();
-  const { daftarKos } = useKos(); // data API yang sudah di-load (cache yang sama dengan halaman utama)
+
+  // Mengambil data katalog dari Supabase
+  const { daftarKos: dataSupabase } = useKosSupabase();
+
+  // Menyesuaikan format data Supabase dengan tipe Kos
+  const daftarKos = useMemo(
+    () => ubahKeKos(dataSupabase),
+    [dataSupabase]
+  );
 
   const [kataKunci, setKataKunci] = useState("");
   const [teksMin, setTeksMin] = useState("");
@@ -18,28 +34,30 @@ export default function FavoritScreen() {
   const [pesanFilter, setPesanFilter] = useState<string | null>(null);
   const [daftarFavorit, setDaftarFavorit] = useState<Kos[]>([]);
 
-  // Langkah 1: ambil hanya kos yang ditandai favorit dari data API.
-  const favoritDariApi = useMemo(
+  // Mengambil hanya kos yang ditandai sebagai favorit
+  const favoritDariSupabase = useMemo(
     () => daftarKos.filter((kos) => kosTersimpan.includes(kos.id)),
-    [daftarKos, kosTersimpan],
+    [daftarKos, kosTersimpan]
   );
 
-  // Langkah 2: saring favorit tadi (nama + rentang harga) dengan saringKos.
+  // Filter nama dan rentang harga
   useEffect(() => {
     let dibatalkan = false;
 
-    saringKos(favoritDariApi, {
+    saringKos(favoritDariSupabase, {
       kataKunci,
       hargaMin: parseHarga(teksMin),
       hargaMax: parseHarga(teksMax),
     })
       .then((hasil) => {
         if (dibatalkan) return;
+
         setDaftarFavorit(hasil);
         setPesanFilter(null);
       })
       .catch((e: Error) => {
         if (dibatalkan) return;
+
         setDaftarFavorit([]);
         setPesanFilter(e.message);
       });
@@ -47,9 +65,11 @@ export default function FavoritScreen() {
     return () => {
       dibatalkan = true;
     };
-  }, [favoritDariApi, kataKunci, teksMin, teksMax]);
+  }, [favoritDariSupabase, kataKunci, teksMin, teksMax]);
 
-  const adaFilter = kataKunci !== "" || teksMin !== "" || teksMax !== "";
+  const adaFilter =
+    kataKunci !== "" || teksMin !== "" || teksMax !== "";
+
   const resetFilter = () => {
     setKataKunci("");
     setTeksMin("");
@@ -72,10 +92,9 @@ export default function FavoritScreen() {
           marginBottom: 20,
         }}
       >
-        Kos Favorit ({favoritDariApi.length})
+        Kos Favorit ({favoritDariSupabase.length})
       </Text>
 
-      {/* Filter favorit */}
       <TextInput
         placeholder="Cari di favorit..."
         value={kataKunci}
@@ -100,7 +119,11 @@ export default function FavoritScreen() {
             key={f.label}
             placeholder={f.label}
             keyboardType="numeric"
-            value={f.nilai === "" ? "" : Number(f.nilai).toLocaleString("id-ID")}
+            value={
+              f.nilai === ""
+                ? ""
+                : Number(f.nilai).toLocaleString("id-ID")
+            }
             onChangeText={(t) => f.ubah(t.replace(/\D/g, ""))}
             accessibilityLabel={f.label}
             style={{
@@ -117,7 +140,9 @@ export default function FavoritScreen() {
       </View>
 
       {pesanFilter && (
-        <Text style={{ color: "#DC2626", marginTop: 8 }}>{pesanFilter}</Text>
+        <Text style={{ color: "#DC2626", marginTop: 8 }}>
+          {pesanFilter}
+        </Text>
       )}
 
       <View
@@ -128,11 +153,14 @@ export default function FavoritScreen() {
         }}
       >
         <Text style={{ color: "#166534" }}>
-          {daftarFavorit.length} dari {favoritDariApi.length} favorit
+          {daftarFavorit.length} dari {favoritDariSupabase.length} favorit
         </Text>
+
         {adaFilter && (
           <Pressable onPress={resetFilter}>
-            <Text style={{ color: "#2563EB", fontWeight: "bold" }}>Reset</Text>
+            <Text style={{ color: "#2563EB", fontWeight: "bold" }}>
+              Reset
+            </Text>
           </Pressable>
         )}
       </View>
@@ -142,7 +170,7 @@ export default function FavoritScreen() {
         keyExtractor={(item) => item.id.toString()}
         ListEmptyComponent={
           <Text style={{ fontSize: 16, marginTop: 20 }}>
-            {favoritDariApi.length === 0
+            {favoritDariSupabase.length === 0
               ? "Belum ada kos favorit. Tandai kos dari halaman utama, ya!"
               : "Tidak ada favorit yang cocok dengan filter."}
           </Text>
@@ -163,10 +191,12 @@ export default function FavoritScreen() {
             </Text>
 
             <Text style={{ fontSize: 16, marginTop: 8 }}>
-              Rp{item.harga.toLocaleString("id-ID")} / bulan (estimasi)
+              Rp{item.harga.toLocaleString("id-ID")} / bulan
             </Text>
 
-            <Text style={{ marginTop: 5 }}>⭐ {item.rating}</Text>
+            <Text style={{ marginTop: 5 }}>
+              ⭐ {item.rating}
+            </Text>
 
             <Text style={{ marginTop: 5 }}>
               {item.sisaKamar} kamar tersedia
@@ -174,7 +204,9 @@ export default function FavoritScreen() {
 
             <Text style={{ marginTop: 5 }}>
               Fasilitas:{" "}
-              {item.fasilitas.length ? item.fasilitas.join(", ") : "-"}
+              {item.fasilitas.length
+                ? item.fasilitas.join(", ")
+                : "-"}
             </Text>
 
             <View

@@ -1,12 +1,6 @@
 import { KOS_API_URL } from "../constants/api";
 import type { Kos, OverpassElement, OverpassResponse } from "../types/kos";
 
-// ---------------------------------------------------------------
-// FASILITAS TAMBAHAN
-// ---------------------------------------------------------------
-// Fasilitas ini tidak berasal dari API OSM.
-// Ditentukan berdasarkan ID supaya hasilnya konsisten
-// walaupun aplikasi di-reload.
 
 const daftarFasilitas = [
   "WiFi",
@@ -16,17 +10,15 @@ const daftarFasilitas = [
   "Dapur",
 ];
 
-// ---------------------------------------------------------------
-// BAGIAN A: Mengubah 1 data mentah OSM menjadi 1 Object Kos
-// ---------------------------------------------------------------
+
 function ubahKeKos(el: OverpassElement): Kos | null {
   const tags = el.tags ?? {};
 
-  // Node punya lat/lon langsung, way/relation punya center.
+
   const latitude = el.lat ?? el.center?.lat;
   const longitude = el.lon ?? el.center?.lon;
 
-  // Data tanpa nama atau tanpa koordinat dibuang.
+  
   if (!tags.name || latitude === undefined || longitude === undefined) {
     return null;
   }
@@ -35,9 +27,7 @@ function ubahKeKos(el: OverpassElement): Kos | null {
   const kodeJenis = el.type === "node" ? 1 : el.type === "way" ? 2 : 3;
   const id = el.id * 10 + kodeJenis;
 
-  // -------------------------------------------------------------
-  // JENIS TEMPAT
-  // -------------------------------------------------------------
+
   let tipe = "Kos";
 
   if (tags.tourism === "guest_house") {
@@ -48,9 +38,7 @@ function ubahKeKos(el: OverpassElement): Kos | null {
     tipe = "Asrama";
   }
 
-  // -------------------------------------------------------------
-  // ALAMAT
-  // -------------------------------------------------------------
+
   const jalan = [tags["addr:street"], tags["addr:housenumber"]]
     .filter(Boolean)
     .join(" ");
@@ -63,9 +51,7 @@ function ubahKeKos(el: OverpassElement): Kos | null {
     .filter(Boolean)
     .join(", ");
 
-  // -------------------------------------------------------------
-  // FASILITAS DARI API
-  // -------------------------------------------------------------
+
   const fasilitas: string[] = [];
 
   // WiFi dari data OSM
@@ -86,12 +72,7 @@ function ubahKeKos(el: OverpassElement): Kos | null {
     fasilitas.push("Parkir");
   }
 
-  // -------------------------------------------------------------
-  // FASILITAS TAMBAHAN DARI APLIKASI
-  // -------------------------------------------------------------
-  // Menggunakan ID sebagai dasar perhitungan.
-  // Karena ID kos sama, hasil fasilitas juga akan sama
-  // walaupun data API di-load ulang.
+
 
   const fasilitasTambahan = [
     daftarFasilitas[id % daftarFasilitas.length],
@@ -105,9 +86,7 @@ function ubahKeKos(el: OverpassElement): Kos | null {
     }
   }
 
-  // -------------------------------------------------------------
-  // HASIL OBJECT KOS
-  // -------------------------------------------------------------
+
   return {
     id,
     nama: tags.name,
@@ -124,14 +103,6 @@ function ubahKeKos(el: OverpassElement): Kos | null {
     latitude,
     longitude,
 
-    // -----------------------------------------------------------
-    // ESTIMASI DEMO
-    // -----------------------------------------------------------
-    // OpenStreetMap tidak menyediakan harga, rating,
-    // dan jumlah kamar.
-    //
-    // Nilainya dihitung berdasarkan ID supaya konsisten.
-    // -----------------------------------------------------------
 
     harga: 400000 + (id % 12) * 50000,
 
@@ -141,9 +112,7 @@ function ubahKeKos(el: OverpassElement): Kos | null {
   };
 }
 
-// ---------------------------------------------------------------
-// Mengubah seluruh JSON respons menjadi daftar Kos
-// ---------------------------------------------------------------
+
 export function ubahKeDaftarKos(
   json: OverpassResponse
 ): Kos[] {
@@ -160,27 +129,23 @@ export function ubahKeDaftarKos(
   return hasil;
 }
 
-// ---------------------------------------------------------------
-// BAGIAN B: Versi async/await
-// Dipakai oleh aplikasi
-// ---------------------------------------------------------------
+
 export async function ambilDataKos(): Promise<Kos[]> {
 
-  // 1. fetch() mengirim permintaan ke API
+  
   const response = await fetch(KOS_API_URL);
 
-  // 2. Cek apakah response dari server berhasil
   if (!response.ok) {
     throw new Error(
       `Gagal mengambil data (status ${response.status})`
     );
   }
 
-  // 3. Ubah response JSON menjadi Object
+  
   const json =
     (await response.json()) as OverpassResponse;
 
-  // 4. Ubah data API menjadi daftar Kos
+
   return ubahKeDaftarKos(json);
 }
 

@@ -1,5 +1,6 @@
 
 import { useLocalSearchParams, useRouter } from "expo-router";
+import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   View,
@@ -8,30 +9,69 @@ import {
   ScrollView,
 } from "react-native";
 
-import { useKos } from "../hooks/useKos";
+import { supabase } from "../lib/supabase";
+import type { KosDatabase } from "../types/kosDatabase";
 
 export default function DetailKos() {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
 
-  const { daftarKos, loading } = useKos(); // data dari API (sudah di-cache)
+  const [kos, setKos] = useState<KosDatabase | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const kos = daftarKos.find(
-    (item) => item.id === Number(id)
-  );
+  useEffect(() => {
+    async function ambilDetailKos() {
+      try {
+        setLoading(true);
+        setError(null);
+
+        const { data, error } = await supabase
+          .from("kos")
+          .select("*")
+          .eq("id", Number(id))
+          .single();
+
+        if (error) {
+          throw error;
+        }
+
+        setKos(data as KosDatabase);
+      } catch (err) {
+        setError(
+          err instanceof Error
+            ? err.message
+            : "Gagal mengambil detail kos"
+        );
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    if (id && !isNaN(Number(id))) {
+      ambilDetailKos();
+    } else {
+      setError("ID kos tidak valid");
+      setLoading(false);
+    }
+  }, [id]);
 
   if (loading) {
     return (
       <View style={styles.container}>
         <ActivityIndicator size="large" color="#16A34A" />
+        <Text>Memuat detail kos...</Text>
       </View>
     );
   }
 
-  if (!kos) {
+  if (error || !kos) {
     return (
       <View style={styles.container}>
         <Text style={styles.title}>Kos tidak ditemukan</Text>
+        <Text style={styles.info}>
+          {error ?? "Data kos tidak tersedia."}
+        </Text>
 
         <Pressable
           style={styles.button}
@@ -48,37 +88,52 @@ export default function DetailKos() {
       <Text style={styles.title}>{kos.nama}</Text>
 
       <Text style={styles.info}>
-        {kos.tipe}
-        {kos.alamat ? ` • ${kos.alamat}` : ""}
+        {kos.tipe ?? "Kos"}
       </Text>
 
       <Text style={styles.price}>
-        Rp{kos.harga.toLocaleString("id-ID")} / bulan (estimasi)
+        Rp{(kos.harga ?? 0).toLocaleString("id-ID")} / bulan
       </Text>
 
-      <Text style={styles.info}>⭐ Rating: {kos.rating}</Text>
+      <Text style={styles.info}>
+        ⭐ Rating: {kos.rating ?? "-"}
+      </Text>
 
       <Text style={styles.info}>
-        Kamar tersedia: {kos.sisaKamar}
+        Kamar tersedia: {kos.sisa_kamar ?? "-"}
+      </Text>
+
+      <Text style={styles.heading}>Informasi Lokasi</Text>
+
+      <Text style={styles.info}>
+        Alamat: {kos.alamat || "-"}
+      </Text>
+
+      <Text style={styles.info}>
+        Kecamatan: {kos.kecamatan || "-"}
+      </Text>
+
+      <Text style={styles.info}>
+        Kota: {kos.kota || "-"}
+      </Text>
+
+      <Text style={styles.info}>
+        Telepon: {kos.telepon || "-"}
       </Text>
 
       <Text style={styles.heading}>Fasilitas</Text>
 
-      {kos.fasilitas.map((fasilitas) => (
-        <Text key={fasilitas} style={styles.info}>
-          • {fasilitas}
+      {kos.fasilitas && kos.fasilitas.length > 0 ? (
+        kos.fasilitas.map((fasilitas, index) => (
+          <Text key={`${fasilitas}-${index}`} style={styles.info}>
+            • {fasilitas}
+          </Text>
+        ))
+      ) : (
+        <Text style={styles.info}>
+          Belum ada informasi fasilitas.
         </Text>
-      ))}
-
-      <Text style={styles.heading}>Lokasi</Text>
-
-      <Text style={styles.info}>
-        Latitude: {kos.latitude}
-      </Text>
-
-      <Text style={styles.info}>
-        Longitude: {kos.longitude}
-      </Text>
+      )}
 
       <Pressable
         style={styles.button}
