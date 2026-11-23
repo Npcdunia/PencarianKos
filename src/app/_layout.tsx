@@ -2,7 +2,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { useEffect } from "react";
-import { Pressable, Text } from "react-native";
+import { Alert, Platform, Pressable, Text, View } from "react-native";
 
 import { AuthProvider, useAuth } from "../Context/authContext";
 import { FavoritProvider } from "../Context/FavoritContext";
@@ -13,7 +13,7 @@ SplashScreen.preventAutoHideAsync();
 
 function AppNavigator() {
   const { isDark, colors, toggleTheme } = useTheme();
-  const { session, isLoading } = useAuth();
+  const { session, isLoading, signOut } = useAuth();
 
   useEffect(() => {
     AsyncStorage.setItem("app-theme", isDark ? "dark" : "light").catch(
@@ -34,6 +34,29 @@ function AppNavigator() {
 
   const isLoggedIn = !!session;
 
+  const prosesLogout = async () => {
+    try {
+      await signOut();
+      // Tidak perlu router.replace: guard di bawah otomatis ke halaman login.
+    } catch (e) {
+      const pesan = e instanceof Error ? e.message : "Gagal keluar.";
+      if (Platform.OS === "web") window.alert(pesan);
+      else Alert.alert("Gagal keluar", pesan);
+    }
+  };
+
+  const konfirmasiLogout = () => {
+    if (Platform.OS === "web") {
+      // Alert.alert tidak berfungsi di web, pakai confirm bawaan browser.
+      if (window.confirm("Yakin ingin keluar dari akun?")) prosesLogout();
+      return;
+    }
+    Alert.alert("Keluar", "Yakin ingin keluar dari akun?", [
+      { text: "Batal", style: "cancel" },
+      { text: "Keluar", style: "destructive", onPress: prosesLogout },
+    ]);
+  };
+
   return (
     <Stack
       screenOptions={{
@@ -42,22 +65,47 @@ function AppNavigator() {
         headerTitleStyle: { color: colors.text },
         contentStyle: { backgroundColor: colors.background },
         headerRight: () => (
-          <Pressable
-            onPress={toggleTheme}
-            style={{
-              marginRight: 12,
-              paddingVertical: 8,
-              paddingHorizontal: 10,
-              borderRadius: 8,
-              backgroundColor: isDark ? "#374151" : "#E5E7EB",
-            }}
-            accessibilityRole="button"
-            accessibilityLabel="Ganti tema aplikasi"
-          >
-            <Text style={{ color: colors.text, fontWeight: "600", fontSize: 13 }}>
-              {isDark ? "☀️ Terang" : "🌙 Gelap"}
-            </Text>
-          </Pressable>
+          <View style={{ flexDirection: "row", alignItems: "center" }}>
+            <Pressable
+              onPress={toggleTheme}
+              style={{
+                marginRight: isLoggedIn ? 8 : 12,
+                paddingVertical: 8,
+                paddingHorizontal: 10,
+                borderRadius: 8,
+                backgroundColor: isDark ? "#374151" : "#E5E7EB",
+              }}
+              accessibilityRole="button"
+              accessibilityLabel="Ganti tema aplikasi"
+            >
+              <Text
+                style={{ color: colors.text, fontWeight: "600", fontSize: 13 }}
+              >
+                {isDark ? "☀️ Terang" : "🌙 Gelap"}
+              </Text>
+            </Pressable>
+
+            {isLoggedIn && (
+              <Pressable
+                onPress={konfirmasiLogout}
+                style={{
+                  marginRight: 12,
+                  paddingVertical: 8,
+                  paddingHorizontal: 10,
+                  borderRadius: 8,
+                  backgroundColor: "#DC2626",
+                }}
+                accessibilityRole="button"
+                accessibilityLabel="Keluar dari akun"
+              >
+                <Text
+                  style={{ color: "#FFFFFF", fontWeight: "600", fontSize: 13 }}
+                >
+                  Keluar
+                </Text>
+              </Pressable>
+            )}
+          </View>
         ),
       }}
     >

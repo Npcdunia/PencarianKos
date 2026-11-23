@@ -10,6 +10,7 @@ import {
 
 import { supabase } from "../lib/supabase";
 import {
+  bersihkanSessionLokal,
   signInEmail,
   signOutSupabase,
   signUpEmail,
@@ -35,31 +36,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     let aktif = true;
+    let subscription: { unsubscribe: () => void } | null = null;
 
-    // 1. Ambil session tersimpan (dari SecureStore) saat app dibuka.
-    supabase.auth
-      .getSession()
-      .then(({ data }) => {
-        if (aktif) setSession(data.session);
-      })
-      .catch((e) => console.error("Gagal membaca session:", e))
-      .finally(() => {
-        if (aktif) setIsLoading(false);
-      });
+    const mulai = async () => {
+      // 1. Setiap aplikasi baru dibuka (setelah ditutup), session lama
+      //    dibuang sehingga pengguna kembali ke halaman login/daftar.
+      await bersihkanSessionLokal();
+      if (!aktif) return;
 
-    // 2. Real-time subscription: SIGNED_IN, SIGNED_OUT, TOKEN_REFRESHED, dll.
-    // Callback sengaja non-async agar tidak deadlock dengan pemanggilan supabase lain.
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, sessionBaru) => {
-      setSession(sessionBaru);
+      setSession(null);
       setIsLoading(false);
-    });
+
+      // 2. Setelah bersih, baru dengarkan perubahan auth (SIGNED_IN,
+      //    SIGNED_OUT, TOKEN_REFRESHED, dll.) selama aplikasi berjalan.
+      //    Callback sengaja non-async agar tidak deadlock.
+      const { data } = supabase.auth.onAuthStateChange((_event, sessionBaru) => {
+        setSession(sessionBaru);
+      });
+      subscription = data.subscription;
+    };
+
+    mulai();
 
     // 3. Cleanup agar tidak terjadi memory leak.
     return () => {
       aktif = false;
-      subscription.unsubscribe();
+      subscription?.unsubscribe();
     };
   }, []);
 

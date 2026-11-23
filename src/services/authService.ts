@@ -37,5 +37,22 @@ export async function signUpEmail(email: string, password: string) {
 
 export async function signOutSupabase() {
   const { error } = await supabase.auth.signOut();
-  if (error) throw new Error(terjemahkanError(error.message));
+  if (error) {
+    // Jika gagal (mis. offline), tetap hapus session di perangkat ini
+    // supaya pengguna benar-benar keluar.
+    const { error: errorLokal } = await supabase.auth.signOut({
+      scope: "local",
+    });
+    if (errorLokal) throw new Error(terjemahkanError(errorLokal.message));
+  }
+}
+
+// Dipanggil saat aplikasi baru dibuka: buang session lama di perangkat
+// tanpa memanggil server, agar pengguna selalu mulai dari halaman login.
+export async function bersihkanSessionLokal() {
+  try {
+    await supabase.auth.signOut({ scope: "local" });
+  } catch (e) {
+    console.error("Gagal membersihkan session:", e);
+  }
 }
